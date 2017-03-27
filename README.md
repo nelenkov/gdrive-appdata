@@ -4,6 +4,14 @@ Tries to fetch the contents of the [appdata](https://developers.google.com/drive
 
 Helps identify what Android applications might be saving/backing up on Google Drive.
 
+## Requirements
+ * Python 2.7
+ * Google Drive Python client library
+```
+pip install --upgrade google-api-python-client
+```
+  * details: [Python Quickstart](https://developers.google.com/drive/v3/web/quickstart/python)
+
 ## Usage
 
 Requires Google account and password. Creating an app-specific password instead of using the 
