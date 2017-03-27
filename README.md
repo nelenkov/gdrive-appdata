@@ -14,9 +14,15 @@ a `packages.xml` file (extracted from device).
 
 Device ID is optional, should be either `ANDROID_ID` or GMS device ID.
 
-When using packages.xml will try to fetch data from all packages (including internal/system ones).
+When using `packages.xml` will try to fetch data from all packages (including internal/system ones).
 This can be time consuming and run into rate limiting. Use with care. You can use a combination 
-of packages.xml and `--target-package` to target a specific package.
+of `--packages-xml` and `--target-package` to target a specific package.
+
+Downloaded files will be saved in the current directory under:
+
+```
+appdata-<account name>-<timestamp>/<package name>/
+```
 
 ## Example
 
