@@ -10,7 +10,7 @@ Helps identify what Android applications might be saving/backing up on Google Dr
 ```
 pip install --upgrade google-api-python-client
 ```
-  * details: [Python Quickstart](https://developers.google.com/drive/v3/web/quickstart/python)
+   * details: [Python Quickstart](https://developers.google.com/drive/v3/web/quickstart/python)
 
 ## Usage
 
