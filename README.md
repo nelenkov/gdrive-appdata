@@ -7,10 +7,10 @@ Helps identify what Android applications might be saving/backing up on Google Dr
 ## Requirements
  * Python 2.7
  * Google Drive Python client library
+   * details: [Python Quickstart](https://developers.google.com/drive/v3/web/quickstart/python)
 ```
 pip install --upgrade google-api-python-client
 ```
-   * details: [Python Quickstart](https://developers.google.com/drive/v3/web/quickstart/python)
 
 ## Usage
 
