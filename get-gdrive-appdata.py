@@ -26,7 +26,8 @@ SLEEP_TIME = 3 #secs
 class GmsContext:
     GMS_SIG = '38918a453d07199354f8b19af05ec6562ced5788'
     GMS_PKG = 'com.google.android.gms'
-    GMS_VERSION = 10084440
+    GMS_VERSION = 11055440
+    GMS_UA = 'GoogleAuth/1.4 (bullhead MTC20F); gzip'
 
     def __init__(self, account, device_id, master_token):
         self.account = account
@@ -86,7 +87,7 @@ def get_gdrive_access_token(gms_ctx, app_id, app_sig):
     #return json.dumps(result)
     return token
 
-def get_master_token(account, password, device_id): 
+def get_master_token(account, password, device_id, target_package): 
     url = 'https://android.clients.google.com/auth'
 
     d = {}
@@ -94,11 +95,16 @@ def get_master_token(account, password, device_id):
     d['Passwd'] = password
     d['app'] = 'com.google.android.gms'
     d['client_sig'] = GmsContext.GMS_SIG
-    d['parentAndroidId'] = device_id
-    #d['androidId'] = device_id
+    d['google_play_services_version'] = GmsContext.GMS_VERSION
+    d['androidId'] = device_id
+    d['lang'] = 'en_US' 
+
 
     headers = {}
     headers['Content-type'] = 'application/x-www-form-urlencoded'
+    headers['User-Agent'] =  GmsContext.GMS_UA
+    headers['device'] = device_id
+    headers['app'] = target_package
     headers['Connection'] = 'close'
 
     r = requests.post(url, headers=headers, data=d)
@@ -172,7 +178,7 @@ def main():
     print 'Using device ID=%s' % device_id
     print 'Using account: %s' % args.account
 
-    master_token = get_master_token(args.account, args.password, device_id)
+    master_token = get_master_token(args.account, args.password, device_id, target_package)
     print  'master token: %s' % master_token
     print
 
