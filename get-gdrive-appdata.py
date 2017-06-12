@@ -155,7 +155,7 @@ def main():
     help_msg = 'Fetches appdata/ from Google Drive. Specify either packages.xml or target package name and sig.'
     parser = argparse.ArgumentParser(description=help_msg)
     parser.add_argument('--packages-xml', help='packages.xml')
-    parser.add_argument('--account', required=True, help='Googole account')
+    parser.add_argument('--account', required=True, help='Google account')
     parser.add_argument('--password', required=True, help='Google password/app-specific password')
     parser.add_argument('--device-id', help='device ID')
     parser.add_argument('--target-package', help='Target package')
