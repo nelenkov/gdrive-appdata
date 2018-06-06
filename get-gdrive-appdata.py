@@ -3,6 +3,8 @@
 import argparse
 import httplib2
 import os
+import base64
+import binascii
 
 import requests
 import json
@@ -18,6 +20,8 @@ import googleapiclient
 
 from xml.etree import ElementTree
 
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Cipher import PKCS1_OAEP
 
 DRIVE_APPDATA = 'https://www.googleapis.com/auth/drive.appdata'
 DRIVE_FILE = 'https://www.googleapis.com/auth/drive.file'
@@ -87,12 +91,105 @@ def get_gdrive_access_token(gms_ctx, app_id, app_sig):
     #return json.dumps(result)
     return token
 
+# from https://github.com/simon-weber/gpsoauth
+"""The MIT License (MIT)
+
+Copyright (c) 2015 Simon Weber
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE."""
+
+def bytes_to_long(s):
+    return long(s.encode('hex'), 16)
+
+def long_to_bytes(lnum, padmultiple=1):
+    """Packs the lnum (which must be convertable to a long) into a
+       byte string 0 padded to a multiple of padmultiple bytes in size. 0
+       means no padding whatsoever, so that packing 0 result in an empty
+       string.  The resulting byte string is the big-endian two's
+       complement representation of the passed in long."""
+
+    # source: http://stackoverflow.com/a/14527004/1231454
+
+    if lnum == 0:
+        return b'\0' * padmultiple
+    elif lnum < 0:
+        raise ValueError("Can only convert non-negative numbers.")
+    s = hex(lnum)[2:]
+    s = s.rstrip('L')
+    if len(s) & 1:
+        s = '0' + s
+    s = binascii.unhexlify(s)
+    if (padmultiple != 1) and (padmultiple != 0):
+        filled_so_far = len(s) % padmultiple
+        if filled_so_far != 0:
+            s = b'\0' * (padmultiple - filled_so_far) + s
+    return s
+
+def key_from_b64(b64_key):
+    binaryKey = base64.b64decode(b64_key)
+
+    i = bytes_to_long(binaryKey[:4])
+    mod = bytes_to_long(binaryKey[4:4+i])
+
+    j = bytes_to_long(binaryKey[i+4:i+4+4])
+    exponent = bytes_to_long(binaryKey[i+8:i+8+j])
+
+    key = RSA.construct((mod, exponent))
+
+    return key
+
+
+def key_to_struct(key):
+    mod = long_to_bytes(key.n)
+    exponent = long_to_bytes(key.e)
+
+    return b'\x00\x00\x00\x80' + mod + b'\x00\x00\x00\x03' + exponent
+
+def rsa_encrypt_auth(email, password, key):
+    enc = bytearray(b'\x00')
+
+    struct = key_to_struct(key)
+    enc.extend(hashlib.sha1(struct).digest()[:4])
+
+    cipher = PKCS1_OAEP.new(key)
+    encrypted_login = cipher.encrypt((email + u'\x00' + password).encode('utf-8'))
+
+    enc.extend(encrypted_login)
+
+    return base64.urlsafe_b64encode(enc)
+
 def get_master_token(account, password, device_id, target_package): 
     url = 'https://android.clients.google.com/auth'
+    
+    b64_key_7_3_29 = (b"AAAAgMom/1a/v0lblO2Ubrt60J2gcuXSljGFQXgcyZWveWLEwo6prwgi3"
+                      b"iJIZdodyhKZQrNWp5nKJ3srRXcUW+F1BD3baEVGcmEgqaLZUNBjm057pK"
+                      b"RI16kB0YppeGx5qIQ5QjKzsR8ETQbKLNWgRY0QRNVz34kMJR3P/LgHax/"
+                      b"6rmf5AAAAAwEAAQ==")
+
+    android_key_7_3_29 = key_from_b64(b64_key_7_3_29)
+    encpass = rsa_encrypt_auth(account, password, android_key_7_3_29)
 
     d = {}
     d['Email'] = account
-    d['Passwd'] = password
+    # raw password is no longer supported, returns 403
+    #d['Passwd'] = password
+    d['EncryptedPasswd'] = encpass
     d['app'] = 'com.google.android.gms'
     d['client_sig'] = GmsContext.GMS_SIG
     d['google_play_services_version'] = GmsContext.GMS_VERSION
