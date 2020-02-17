@@ -5,7 +5,7 @@ Tries to fetch the contents of the [appdata](https://developers.google.com/drive
 Helps identify what Android applications might be saving/backing up on Google Drive.
 
 ## Requirements
- * Python 2.7
+ * Python 3
  * Google Drive Python client library
    * details: [Python Quickstart](https://developers.google.com/drive/v3/web/quickstart/python)
 ```
