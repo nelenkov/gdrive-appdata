@@ -68,7 +68,7 @@ def get_gdrive_access_token(gms_ctx, app_id, app_sig):
 
     r = requests.post(url, headers=headers, data=d)
     if r.status_code != 200:
-        print 'Unexpected HTTP error, status code=%d: [%s]' % (r.status_code, r.text)
+        print('Unexpected HTTP error, status code=%d: [%s]' % (r.status_code, r.text))
         return None
 
     r.raise_for_status()
@@ -115,7 +115,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE."""
 
 def bytes_to_long(s):
-    return long(s.encode('hex'), 16)
+    return int.from_bytes(s, byteorder='big')
 
 def long_to_bytes(lnum, padmultiple=1):
     """Packs the lnum (which must be convertable to a long) into a
@@ -168,7 +168,7 @@ def rsa_encrypt_auth(email, password, key):
     enc.extend(hashlib.sha1(struct).digest()[:4])
 
     cipher = PKCS1_OAEP.new(key)
-    encrypted_login = cipher.encrypt((email + u'\x00' + password).encode('utf-8'))
+    encrypted_login = cipher.encrypt((email + '\x00' + password).encode('utf-8'))
 
     enc.extend(encrypted_login)
 
@@ -218,7 +218,7 @@ def get_master_token(account, password, device_id, target_package):
 
 def get_gdrive_credentials(gms_ctx, app_id, app_sig):
     gdrive_token = get_gdrive_access_token(gms_ctx, app_id, app_sig)
-    print('GDrive token: %s' % gdrive_token)
+    print(('GDrive token: %s' % gdrive_token))
     if gdrive_token is None:
         return None
 
@@ -260,10 +260,10 @@ def main():
 
     args = parser.parse_args()
     if args.packages_xml and args.target_package_sig:
-        print 'Specify either --packages-xml or --target-package and --target-package-sig'
+        print('Specify either --packages-xml or --target-package and --target-package-sig')
         sys.exit(2)
     if not args.packages_xml and (args.target_package and not args.target_package_sig) or (not args.target_package and args.target_package_sig):
-        print 'Specify both --target-package and --target-package-sig if no --packages-xml'
+        print('Specify both --target-package and --target-package-sig if no --packages-xml')
         sys.exit(2)
         
     if args.device_id is not None:
@@ -272,12 +272,12 @@ def main():
     target_package_sig = args.target_package_sig
     packages_path = args.packages_xml
 
-    print 'Using device ID=%s' % device_id
-    print 'Using account: %s' % args.account
+    print('Using device ID=%s' % device_id)
+    print('Using account: %s' % args.account)
 
     master_token = get_master_token(args.account, args.password, device_id, target_package)
-    print  'master token: %s' % master_token
-    print
+    print('master token: %s' % master_token)
+    print()
 
     gms_ctx = GmsContext(args.account, device_id, master_token)
 
@@ -288,16 +288,16 @@ def main():
     else:
         packages = parse_packages(packages_path)
 
-    for package in packages.keys():
+    for package in list(packages.keys()):
         if target_package is not None and not target_package in package:
             continue
 
         cert_hash = packages[package]
-        print 'Getting package [%s] with hash [%s]' % (package, cert_hash)
+        print('Getting package [%s] with hash [%s]' % (package, cert_hash))
         credentials = get_gdrive_credentials(gms_ctx, package, cert_hash)
         if credentials is None:
-            print('-' * 70)
-            print
+            print(('-' * 70))
+            print()
             continue
 
         http = credentials.authorize(httplib2.Http())
@@ -308,21 +308,21 @@ def main():
             results = service.files().list(spaces='appDataFolder', 
                 pageSize=100, fields="nextPageToken, files(id, name)").execute()
         except googleapiclient.errors.HttpError as e:
-            print 'Error: %s' % e
+            print('Error: %s' % e)
             time.sleep(SLEEP_TIME)
             continue
 
         items = results.get('files', [])
         if not items:
-            print 'No files found.'
-            print
+            print('No files found.')
+            print()
             time.sleep(SLEEP_TIME)
         else:
             backup_dir = 'appdata-%s-%s'  % (args.account.replace('@', '_'), str(int(time.time())))
             if not os.path.exists(backup_dir):
                 os.makedirs(backup_dir)
-            print 'Saving in %s/' % backup_dir
-            print
+            print('Saving in %s/' % backup_dir)
+            print()
 
             package_dir = os.path.join(backup_dir, package)
             if not os.path.exists(package_dir):
@@ -330,7 +330,7 @@ def main():
 
             print('Files:')
             for item in items:
-                print '%s: id=%s' % (item['name'], item['id'])
+                print('%s: id=%s' % (item['name'], item['id']))
                 name = '%s_%s' % (item['id'], item['name'])
                 req = service.files().get_media(fileId=item['id'])
                 path = os.path.join(package_dir, os.path.basename(name))
@@ -342,14 +342,14 @@ def main():
                     try:
                         while done is False:
                             status, done = downloader.next_chunk()
-                            print("Download %d %%." % int(status.progress() * 100))
+                            print(("Download %d %%." % int(status.progress() * 100)))
                     except googleapiclient.errors.HttpError as e:
-                        print 'Error: %s' % e
-                        print
+                        print('Error: %s' % e)
+                        print()
                         time.sleep(SLEEP_TIME)
                         continue
-    print('-' * 70)
-    print
+    print(('-' * 70))
+    print()
 
 if __name__ == '__main__':
     main()
